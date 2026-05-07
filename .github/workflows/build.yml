@@ -6,27 +6,149 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '16.2'
-    - name: Build archive
+    
+    - name: Build unsigned IPA
       run: |
+        mkdir -p DeviceIdChecker.xcodeproj
+        cat > DeviceIdChecker.xcodeproj/project.pbxproj << 'XCODPROJ'
+        // !$*UTF8*$!
+        {
+        	archiveVersion = 1;
+        	classes = {
+        	};
+        	objectVersion = 56;
+        	objects = {
+        		B0000000000000000000001 = {
+        			isa = PBXBuildFile;
+        			fileRef = B0000000000000000000011;
+        		};
+        		B0000000000000000000002 = {
+        			isa = PBXBuildFile;
+        			fileRef = B0000000000000000000012;
+        		};
+        		B0000000000000000000011 = {
+        			isa = PBXFileReference;
+        			lastKnownFileType = sourcecode.swift;
+        			path = DeviceIdCheckerApp.swift;
+        			sourceTree = "<group>";
+        		};
+        		B0000000000000000000012 = {
+        			isa = PBXFileReference;
+        			lastKnownFileType = sourcecode.swift;
+        			path = ContentView.swift;
+        			sourceTree = "<group>";
+        		};
+        		B0000000000000000000013 = {
+        			isa = PBXFileReference;
+        			lastKnownFileType = text.plist.xml;
+        			path = Info.plist;
+        			sourceTree = "<group>";
+        		};
+        		B0000000000000000000021 = {
+        			isa = PBXGroup;
+        			children = (
+        				B0000000000000000000011,
+        				B0000000000000000000012,
+        				B0000000000000000000013,
+        			);
+        			path = DeviceIdChecker;
+        			sourceTree = "<group>";
+        		};
+        		B0000000000000000000031 = {
+        			isa = PBXGroup;
+        			children = (
+        				B0000000000000000000021,
+        			);
+        			sourceTree = "<group>";
+        		};
+        		B0000000000000000000041 = {
+        			isa = PBXNativeTarget;
+        			buildConfigurationList = B0000000000000000000061;
+        			buildPhases = (
+        				B0000000000000000000051,
+        			);
+        			buildRules = (
+        			);
+        			dependencies = (
+        			);
+        			name = DeviceIdChecker;
+        			productName = DeviceIdChecker;
+        			productType = "com.apple.product-type.application";
+        		};
+        		B0000000000000000000051 = {
+        			isa = PBXSourcesBuildPhase;
+        			files = (
+        				B0000000000000000000001,
+        				B0000000000000000000002,
+        			);
+        		};
+        		B0000000000000000000061 = {
+        			isa = XCConfigurationList;
+        			buildConfigurations = (
+        				B0000000000000000000071,
+        			);
+        			defaultConfigurationIsVisible = 0;
+        			defaultConfigurationName = Release;
+        		};
+        		B0000000000000000000071 = {
+        			isa = XCBuildConfiguration;
+        			buildSettings = {
+        				CODE_SIGN_IDENTITY = "";
+        				CODE_SIGN_STYLE = Manual;
+        				INFOPLIST_FILE = DeviceIdChecker/Info.plist;
+        				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+        				PRODUCT_BUNDLE_IDENTIFIER = com.yourname.deviceidchecker;
+        				PRODUCT_NAME = DeviceIdChecker;
+        				SWIFT_VERSION = 5.0;
+        			};
+        			name = Release;
+        		};
+        		B0000000000000000000081 = {
+        			isa = PBXProject;
+        			buildConfigurationList = B0000000000000000000091;
+        			compatibilityVersion = "Xcode 14.0";
+        			mainGroup = B0000000000000000000031;
+        			productRefGroup = B0000000000000000000031;
+        			projectDirPath = "";
+        			projectRoot = "";
+        			targets = (
+        				B0000000000000000000041,
+        			);
+        		};
+        		B0000000000000000000091 = {
+        			isa = XCConfigurationList;
+        			buildConfigurations = (
+        				B0000000000000000000101,
+        			);
+        		};
+        		B0000000000000000000101 = {
+        			isa = XCBuildConfiguration;
+        			buildSettings = {
+        				SDKROOT = iphoneos;
+        			};
+        			name = Release;
+        		};
+        		rootObject = B0000000000000000000081;
+        	}
+        }
+        XCODPROJ
+        
         xcodebuild archive \
-          -workspace YourApp.xcworkspace \
-          -scheme YourApp \
+          -project DeviceIdChecker.xcodeproj \
+          -scheme DeviceIdChecker \
           -sdk iphoneos \
           -configuration Release \
-          -archivePath build/YourApp.xcarchive \
-          CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
+          -archivePath build/DeviceIdChecker.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
-    - name: Create unsigned IPA
-      run: |
+          
         mkdir Payload
-        cp -R build/YourApp.xcarchive/Products/Applications/YourApp.app Payload/
-        zip -r app.ipa Payload
-    - name: Upload IPA artifact
+        cp -R build/DeviceIdChecker.xcarchive/Products/Applications/DeviceIdChecker.app Payload/
+        zip -r DeviceIdChecker.ipa Payload
+        
+    - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: unsigned-ipa
-        path: app.ipa
+        name: DeviceIdChecker
+        path: DeviceIdChecker.ipa
