@@ -5,27 +5,28 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '15.4'
+        xcode-version: '16.2'
     - name: Build archive
       run: |
-        xcodebuild -project testDeviceId.xcodeproj \
-          -scheme testDeviceId \
+        xcodebuild archive \
+          -workspace YourApp.xcworkspace \
+          -scheme YourApp \
           -sdk iphoneos \
           -configuration Release \
-          -archivePath build/testDeviceId.xcarchive \
-          archive \
-          CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          -archivePath build/YourApp.xcarchive \
+          CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
     - name: Create unsigned IPA
       run: |
         mkdir Payload
-        cp -R build/testDeviceId.xcarchive/Products/Applications/testDeviceId.app Payload/
+        cp -R build/YourApp.xcarchive/Products/Applications/YourApp.app Payload/
         zip -r app.ipa Payload
-    - name: Upload IPA
-      uses: actions/upload-artifact@v3
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
       with:
         name: unsigned-ipa
         path: app.ipa
