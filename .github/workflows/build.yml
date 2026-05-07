@@ -1,4 +1,4 @@
-name: Build iOS App
+name: Build DeviceIdChecker
 on: workflow_dispatch
 
 jobs:
@@ -7,148 +7,80 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Build unsigned IPA
+    - name: Build IPA
       run: |
-        mkdir -p DeviceIdChecker.xcodeproj
-        cat > DeviceIdChecker.xcodeproj/project.pbxproj << 'XCODPROJ'
-        // !$*UTF8*$!
-        {
-        	archiveVersion = 1;
-        	classes = {
-        	};
-        	objectVersion = 56;
-        	objects = {
-        		B0000000000000000000001 = {
-        			isa = PBXBuildFile;
-        			fileRef = B0000000000000000000011;
-        		};
-        		B0000000000000000000002 = {
-        			isa = PBXBuildFile;
-        			fileRef = B0000000000000000000012;
-        		};
-        		B0000000000000000000011 = {
-        			isa = PBXFileReference;
-        			lastKnownFileType = sourcecode.swift;
-        			path = DeviceIdCheckerApp.swift;
-        			sourceTree = "<group>";
-        		};
-        		B0000000000000000000012 = {
-        			isa = PBXFileReference;
-        			lastKnownFileType = sourcecode.swift;
-        			path = ContentView.swift;
-        			sourceTree = "<group>";
-        		};
-        		B0000000000000000000013 = {
-        			isa = PBXFileReference;
-        			lastKnownFileType = text.plist.xml;
-        			path = Info.plist;
-        			sourceTree = "<group>";
-        		};
-        		B0000000000000000000021 = {
-        			isa = PBXGroup;
-        			children = (
-        				B0000000000000000000011,
-        				B0000000000000000000012,
-        				B0000000000000000000013,
-        			);
-        			path = DeviceIdChecker;
-        			sourceTree = "<group>";
-        		};
-        		B0000000000000000000031 = {
-        			isa = PBXGroup;
-        			children = (
-        				B0000000000000000000021,
-        			);
-        			sourceTree = "<group>";
-        		};
-        		B0000000000000000000041 = {
-        			isa = PBXNativeTarget;
-        			buildConfigurationList = B0000000000000000000061;
-        			buildPhases = (
-        				B0000000000000000000051,
-        			);
-        			buildRules = (
-        			);
-        			dependencies = (
-        			);
-        			name = DeviceIdChecker;
-        			productName = DeviceIdChecker;
-        			productType = "com.apple.product-type.application";
-        		};
-        		B0000000000000000000051 = {
-        			isa = PBXSourcesBuildPhase;
-        			files = (
-        				B0000000000000000000001,
-        				B0000000000000000000002,
-        			);
-        		};
-        		B0000000000000000000061 = {
-        			isa = XCConfigurationList;
-        			buildConfigurations = (
-        				B0000000000000000000071,
-        			);
-        			defaultConfigurationIsVisible = 0;
-        			defaultConfigurationName = Release;
-        		};
-        		B0000000000000000000071 = {
-        			isa = XCBuildConfiguration;
-        			buildSettings = {
-        				CODE_SIGN_IDENTITY = "";
-        				CODE_SIGN_STYLE = Manual;
-        				INFOPLIST_FILE = DeviceIdChecker/Info.plist;
-        				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-        				PRODUCT_BUNDLE_IDENTIFIER = com.yourname.deviceidchecker;
-        				PRODUCT_NAME = DeviceIdChecker;
-        				SWIFT_VERSION = 5.0;
-        			};
-        			name = Release;
-        		};
-        		B0000000000000000000081 = {
-        			isa = PBXProject;
-        			buildConfigurationList = B0000000000000000000091;
-        			compatibilityVersion = "Xcode 14.0";
-        			mainGroup = B0000000000000000000031;
-        			productRefGroup = B0000000000000000000031;
-        			projectDirPath = "";
-        			projectRoot = "";
-        			targets = (
-        				B0000000000000000000041,
-        			);
-        		};
-        		B0000000000000000000091 = {
-        			isa = XCConfigurationList;
-        			buildConfigurations = (
-        				B0000000000000000000101,
-        			);
-        		};
-        		B0000000000000000000101 = {
-        			isa = XCBuildConfiguration;
-        			buildSettings = {
-        				SDKROOT = iphoneos;
-        			};
-        			name = Release;
-        		};
-        		rootObject = B0000000000000000000081;
-        	}
-        }
-        XCODPROJ
+        # 创建临时 App 结构
+        mkdir -p Payload/DeviceIdChecker.app
         
-        xcodebuild archive \
-          -project DeviceIdChecker.xcodeproj \
-          -scheme DeviceIdChecker \
-          -sdk iphoneos \
-          -configuration Release \
-          -archivePath build/DeviceIdChecker.xcarchive \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
-          
-        mkdir Payload
-        cp -R build/DeviceIdChecker.xcarchive/Products/Applications/DeviceIdChecker.app Payload/
+        # 用 swiftc 直接编译
+        xcrun swiftc \
+          -sdk $(xcrun --sdk iphoneos --show-sdk-path) \
+          -target arm64-apple-ios16.0 \
+          -O \
+          -framework Foundation \
+          -framework UIKit \
+          -framework CryptoKit \
+          Sources/DeviceIdChecker/main.swift \
+          -o Payload/DeviceIdChecker.app/DeviceIdChecker
+        
+        # 创建 Info.plist
+        cat > Payload/DeviceIdChecker.app/Info.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>DeviceIdChecker</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.deviceid.checker</string>
+            <key>CFBundleName</key>
+            <string>DeviceIdChecker</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0</string>
+            <key>CFBundleVersion</key>
+            <string>1</string>
+            <key>LSRequiresIPhoneOS</key>
+            <true/>
+            <key>UILaunchStoryboardName</key>
+            <string>LaunchScreen</string>
+            <key>UISupportedInterfaceOrientations</key>
+            <array>
+                <string>UIInterfaceOrientationPortrait</string>
+            </array>
+        </dict>
+        </plist>
+        EOF
+        
+        # 创建启动界面 storyboard
+        mkdir -p Payload/DeviceIdChecker.app/Base.lproj
+        cat > Payload/DeviceIdChecker.app/Base.lproj/LaunchScreen.storyboard << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13122.16" targetRuntime="AppleSDK" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+            <scenes>
+                <scene sceneID="EHf-IW-A2E">
+                    <objects>
+                        <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                            <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <color key="backgroundColor" xcode11CocoaTouchSystemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                            </view>
+                        </viewController>
+                        <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                    </objects>
+                    <point key="canvasLocation" x="53" y="375"/>
+                </scene>
+            </scenes>
+        </document>
+        EOF
+        
+        # 打包 IPA
         zip -r DeviceIdChecker.ipa Payload
         
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: DeviceIdChecker
+        name: DeviceIdChecker-IPA
         path: DeviceIdChecker.ipa
